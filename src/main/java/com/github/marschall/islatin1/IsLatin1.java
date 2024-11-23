@@ -2,6 +2,9 @@ package com.github.marschall.islatin1;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
+import static jdk.incubator.vector.VectorOperators.EQ;
+import static jdk.incubator.vector.VectorOperators.UNSIGNED_GE;
+import static jdk.incubator.vector.VectorOperators.UNSIGNED_LE;
 
 import java.io.IOException;
 import java.lang.foreign.Arena;
@@ -9,17 +12,15 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.FileLock;
 import java.nio.file.Path;
 
 import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorSpecies;
-import jdk.incubator.vector.VectorOperators;
 
 public class IsLatin1 {
-  
+
   private static final ByteOrder BYTE_ORDER = ByteOrder.nativeOrder();
   private static final VectorSpecies<Byte> SPECIES = ByteVector.SPECIES_PREFERRED;
 
@@ -64,34 +65,32 @@ public class IsLatin1 {
 
   static long isLatin1(MemorySegment segment) {
     long i = 0;
+    ByteVector lf = ByteVector.broadcast(SPECIES, (byte) 0x0A);
+    ByteVector cr = ByteVector.broadcast(SPECIES, (byte) 0x0D);
     long upperBound = SPECIES.loopBound(segment.byteSize());
-    ByteVector lf = ByteVector.zero(SPECIES).broadcast((byte) 0x0A);
-    ByteVector cr = ByteVector.zero(SPECIES).broadcast((byte) 0x0D);
     for (; i < upperBound; i += SPECIES.length()) {
-        var bv = ByteVector.fromMemorySegment(SPECIES, segment, i, BYTE_ORDER);
-        VectorMask<Byte> isLf = bv.compare(VectorOperators.EQ, lf);
-        VectorMask<Byte> isCr = bv.compare(VectorOperators.EQ, cr);
-        VectorMask<Byte> asciiLowRange = bv.compare(VectorOperators.GE, (byte) 0x20);
-        VectorMask<Byte> isAscii = bv.compare(VectorOperators.LE, (byte) 0x7E, asciiLowRange);
-        VectorMask<Byte> isHighRange = bv.compare(VectorOperators.GE, (byte) 0xA0);
-        
-        VectorMask<Byte> anyCondition = isLf.or(isCr).or(isAscii).or(isHighRange);
-//        va.broadcast(i)
-//          .addIndex(1)
-//          .mul(100_000)
-//          .add((int) (99_999L * (100_000L / 2L)))
-//          .intoArray(a, i);
+      var bv = ByteVector.fromMemorySegment(SPECIES, segment, i, BYTE_ORDER);
+      VectorMask<Byte> isLf = bv.compare(EQ, lf);
+      VectorMask<Byte> isCr = bv.compare(EQ, cr);
+      VectorMask<Byte> asciiLowRange = bv.compare(UNSIGNED_GE, (byte) 0x20);
+      VectorMask<Byte> isAscii = bv.compare(UNSIGNED_LE, (byte) 0x7E, asciiLowRange);
+      VectorMask<Byte> isHighRange = bv.compare(UNSIGNED_GE, (byte) 0xA0);
+
+      VectorMask<Byte> notLatin1 = isLf.or(isCr).or(isAscii).or(isHighRange).not();
+      int firstNonLatin1 = notLatin1.firstTrue();
+      if (firstNonLatin1 != SPECIES.length()) {
+        return i + firstNonLatin1;
+      }
     }
     for (; i < segment.byteSize(); i++) {
       byte b = segment.get(ValueLayout.JAVA_BYTE, i);
-//      byte b = segment.getAtIndex(ValueLayout.JAVA_BYTE, i);
       if (!isLatin1(b)) {
         return i;
       }
     }
     return -1;
   }
-  
+
   static boolean isLatin1(byte b) {
     int i = Byte.toUnsignedInt(b);
     return i == 0x0A | i == 0x0D
