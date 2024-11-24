@@ -1,4 +1,4 @@
-module com.github.marschall.islatin1 {
+module com.github.marschall.islatinone {
 
   requires jdk.incubator.vector;
 

@@ -50,15 +50,12 @@ public class IsLatin1 {
   static long isLatin1(Path file) throws IOException {
     try (FileChannel channel = FileChannel.open(file, READ)) {
       long fileSize = channel.size();
-      FileLock fileLock = null;
-      fileLock = channel.lock(0, fileSize, true);
+      FileLock fileLock = channel.lock(0, fileSize, true);
       try (Arena arena = Arena.ofConfined()) {
         MemorySegment segment = channel.map(READ_ONLY, 0, fileSize, arena);
         return isLatin1(segment);
       } finally {
-        if (fileLock != null) {
-          fileLock.release();
-        }
+        fileLock.release();
       }
     }
   }

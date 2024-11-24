@@ -72,6 +72,18 @@
           </archive>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.apache.logging.log4j.jul.LogManager</java.util.logging.manager>
+          </systemPropertyVariables>
+          <argLine>
+            --enable-preview
+            --add-modules jdk.incubator.vector
+          </argLine>
+        </configuration>
+      </plugin>
     </plugins>
 
     <pluginManagement>
@@ -145,7 +157,13 @@
                   <goal>compile-no-fork</goal>
                 </goals>
                 <phase>package</phase>
+                <configuration>
+                  <buildArgs combine.children="append">
+                    <buildArg>--enable-preview</buildArg>
+                  </buildArgs>
+                </configuration>
               </execution>
+<!--
               <execution>
                 <id>test-native</id>
                 <goals>
@@ -153,6 +171,7 @@
                 </goals>
                 <phase>test</phase>
               </execution>
+-->
             </executions>
           </plugin>
         </plugins>
