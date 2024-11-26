@@ -6,6 +6,6 @@ ${JAVA_HOME}/bin/java \
   -XX:+HeapDumpOnOutOfMemoryError \
   -XX:+AlwaysPreTouch \
   --enable-preview \
-  --add-modules jdk.incubator.vector \
-  -jar target/is-latin1-1.0.0-SNAPSHOT.jar \
+  --module-path target/is-latin1-1.0.0-SNAPSHOT.jar \
+  --module com.github.marschall.islatinone \
   /tmp/ISO885918727130585629604208.txt
