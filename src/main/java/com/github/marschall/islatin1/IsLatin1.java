@@ -64,14 +64,17 @@ public class IsLatin1 {
     long i = 0;
     ByteVector lf = ByteVector.broadcast(SPECIES, (byte) 0x0A);
     ByteVector cr = ByteVector.broadcast(SPECIES, (byte) 0x0D);
+    ByteVector sp = ByteVector.broadcast(SPECIES, (byte) 0x20);
+    ByteVector tilde = ByteVector.broadcast(SPECIES, (byte) 0x7E);
+    ByteVector nbsp = ByteVector.broadcast(SPECIES, (byte) 0xA0);
     long upperBound = SPECIES.loopBound(segment.byteSize());
     for (; i < upperBound; i += SPECIES.length()) {
-      var bv = ByteVector.fromMemorySegment(SPECIES, segment, i, BYTE_ORDER);
-      VectorMask<Byte> isLf = bv.compare(EQ, lf);
-      VectorMask<Byte> isCr = bv.compare(EQ, cr);
-      VectorMask<Byte> asciiLowRange = bv.compare(UNSIGNED_GE, (byte) 0x20);
-      VectorMask<Byte> isAscii = bv.compare(UNSIGNED_LE, (byte) 0x7E, asciiLowRange);
-      VectorMask<Byte> isHighRange = bv.compare(UNSIGNED_GE, (byte) 0xA0);
+      ByteVector vector = ByteVector.fromMemorySegment(SPECIES, segment, i, BYTE_ORDER);
+      VectorMask<Byte> isLf = vector.compare(EQ, lf);
+      VectorMask<Byte> isCr = vector.compare(EQ, cr);
+      VectorMask<Byte> asciiLowRange = vector.compare(UNSIGNED_GE, sp);
+      VectorMask<Byte> isAscii = vector.compare(UNSIGNED_LE, tilde, asciiLowRange);
+      VectorMask<Byte> isHighRange = vector.compare(UNSIGNED_GE, nbsp);
 
       VectorMask<Byte> notLatin1 = isLf.or(isCr).or(isAscii).or(isHighRange).not();
       int firstNonLatin1 = notLatin1.firstTrue();

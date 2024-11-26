@@ -5,6 +5,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class IsLatin1Tests {
@@ -62,6 +64,13 @@ class IsLatin1Tests {
     } finally {
       Files.delete(testFile);
     }
+  }
+  
+  @Disabled
+  @Test
+  void generateFile() throws IOException {
+    Path testFile = createTestFile(4L * 1024L * 1024L * 1024L);
+    assertNotNull(testFile);
   }
 
   private static Path createTestFile(long size) throws IOException {
